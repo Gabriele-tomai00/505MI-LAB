@@ -1,5 +1,5 @@
 # LAB 06_AitM_2
----
+
 The objective of this laboratory is to gain familiarity with the ARP protocol and perform ARP spoofing attack simulations.
 
 I followed the guide using the Ubuntu environment, installed Docker, and built the containers using `docker-compose.yml`.
@@ -303,3 +303,6 @@ sniff(iface="eth0", filter=f, prn=spoof_pkt)
 **Result:**
 The connection is established, and the text is correctly replaced in the transmission.
 <img src="./img/6_task_3_completed.png" style="width:80%; height:auto;">
+
+### Observation
+I should mention that I used an LLM to help me generate the python code.

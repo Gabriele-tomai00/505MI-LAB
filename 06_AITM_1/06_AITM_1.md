@@ -1,5 +1,5 @@
-# LAB 06_AitM
----
+# LAB 06_AITM
+
 ## Case A: beavestudio.com (No Strict Transport Security)
 
 For this experiment, I analyzed the corporate website of `beavestudio.com`. The goal is to perform an SSLStrip attack, downgrading the victim's connection from HTTPS to HTTP, allowing us to intercept and modify traffic.
