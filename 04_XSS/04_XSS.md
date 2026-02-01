@@ -1,4 +1,4 @@
-# LAB 03_IDOR
+# LAB 04_XSS
 
 ## 1. DOM XSS Attack
 
@@ -51,15 +51,12 @@ In other words, the application trusts user input too early and treats it as saf
    Unlike the DOM XSS case, the goal here was to find a parameter whose value is included in the response and later rendered by the client.
 
 2. By navigating to the *Order History* section and clicking on the truck icon associated with an order, the application redirected to the order tracking page with the following URL format: ```/track-result?id=<order-id>```
-
 This indicated that the `id` parameter is taken from the URL and used to retrieve and display order information.
 
 3. To verify whether this parameter was reflected without proper sanitization, the following test value was first used: http://localhost:4000/#/track-result?id=test
-
 The value `test` was correctly processed by the application, confirming that the `id` parameter is actively used and reflected in the page logic.
 
 4. A malicious payload was then injected by replacing the `id` value with a script-based XSS payload:
-
 ```html
 <script>alert('xss')</script>
 ```
@@ -110,9 +107,10 @@ the reflection occurs at the server level, while the actual execution is trigger
 From a security perspective, this vulnerability exists because the application:
 
 - Trusts user input without validation.
-- Explicitly bypasses Angular’s sanitization mechanisms.
+- Explicitly bypasses sanitization mechanisms.
 - Inserts attacker-controlled data into the DOM using unsafe methods.
-- A proper mitigation would require:
+
+A proper mitigation would require:
 - Strict validation of URL parameters.
 - Avoiding the use of bypassSecurityTrustHtml for untrusted content.
 - Encoding any user-supplied data before rendering it in the HTML.
