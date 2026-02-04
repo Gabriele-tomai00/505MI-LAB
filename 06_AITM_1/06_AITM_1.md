@@ -2,7 +2,7 @@
 
 ## Case A: beavestudio.com (No Strict Transport Security)
 
-For this experiment, I analyzed the corporate website of `beavestudio.com`. The goal is to perform an SSLStrip attack, downgrading the victim's connection from HTTPS to HTTP, allowing us to intercept and modify traffic.
+For this experiment, I analyzed the corporate website of `beavestudio.com` (my friends' company). The goal is to perform an SSLStrip attack, downgrading the victim's connection from HTTPS to HTTP, allowing us to intercept and modify traffic.
 
 ### 1. Target Analysis
 First, I analyzed the domain using `curl` to check for security headers, specifically HSTS (HTTP Strict Transport Security).
@@ -71,7 +71,7 @@ I created a rule to modify the "Customer Satisfaction" percentage on the homepag
 **Result:**
 The user sees a drastically lower satisfaction rate, potentially losing trust in the business.
 
-<img src="./img_1/100_13.png" alt="Burp Rule 100 to 13" style="width:50%; height:auto;">
+<img src="./img_1/100_13.png" alt="Burp Rule 100 to 13" style="width:70%; height:auto;">
 <img src="./img_1/13.png" alt="Website showing 13%" style="width:80%; height:auto;">
 
 #### Scenario B: Social Engineering & Data Exfiltration (Injection)
@@ -129,15 +129,16 @@ document.getElementById('promo-submit').addEventListener('click', () => {
 ```
 *(Note: The payload is inserted before the closing body tag to ensure the DOM is loaded)*
 
-**Result:**
-<img src="./img_1/popup.png" alt="Injected Popup" style="width:60%; height:auto;">
+**Result:**  
+
+<img src="./img_1/popup.png" alt="Injected Popup" style="width:70%; height:auto;">
 
 #### Other Concrete Attack Vectors
 Given that the target website is a marketing agency with contact forms and CV upload capabilities (no user login), the following AitM attacks are highly relevant:
 
 1.  **Contact Form Tampering (Request Modification)**: Intercepting the `POST` request when a user submits the "Contact Us" form.
 
-2.  **CV Upload Interception & Replacement (Malware Delivery): Intercepting the file upload traffic when a candidate submits their CV.
+2.  **CV Upload Interception & Replacement (Malware Delivery)**: Intercepting the file upload traffic when a candidate submits their CV.
 The impact is enteresting:
     - Privacy Violation: Stealing personal data from the CV (GDPR breach).
     - Network Compromise: Replacing the legitimate PDF/Word document with a malicious file containing a reverse shell or exploit. When the HR department opens the "CV", their internal network is compromised.
@@ -195,7 +196,8 @@ After clearing the HSTS cache and configuring the browser to use Burp as a proxy
 
 When request interception was enabled in Burp and navigation to another page of the same site was attempted, the browser displayed the warning:
 
-> “This site doesn’t support a secure connection. Attackers can see and change information that you send or receive from the site ...”
+“This site doesn’t support a secure connection. Attackers can see and change information that you send or receive from the site ...”
+
 <img src="./img_2/hsts_unicef.png" alt="Injected Popup" style="width:100%; height:auto;">
 
 This behavior shows that the connection was still using HTTP and that no transport-level security was being applied. The warning emphasizes the vulnerability of the communication channel, where an attacker in a Man-in-the-Middle position can read and modify the exchanged data.
@@ -206,3 +208,5 @@ I used a code similar to the one provided in the previous website (case A) `beav
 
 <img src="./img_2/injection.png" alt="Injected Popup" style="width:100%; height:auto;">
 
+### Observation
+I should mention that I used an LLM to help me generate the html, css, javascript code for the popup.
