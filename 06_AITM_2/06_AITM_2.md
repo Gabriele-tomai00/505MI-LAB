@@ -106,7 +106,7 @@ Address                  HWtype  HWaddress           Flags Mask            Iface
 ```
 The unsolicited ARP reply is ignored, and no cache entry is created because A has not initiated communication with B.
 
-## Task 1.C (using ARP gratuitous message).
+### Task 1.C (using ARP gratuitous message).
 **Objective:** Construct a gratuitous ARP request to map B’s IP address to M’s MAC address.
 
 **Implementation:**
@@ -200,9 +200,7 @@ To make the attack more effective, I reduced the interval of false ARP packets t
 <img src="./img/test_mim_attack_task_2.png" style="width:80%; height:auto;">
 
 ### Step 3 (Turn on IP forwarding)
-**Objective:** Enable IP forwarding on M and observe the traffic flow.
-
-**Implementation:** IP forwarding was enabled on M.
+**Objective:** Enable IP forwarding on M and observe the traffic flow.  
 
 **Result:**
 Pinging B from A produced the following output:
